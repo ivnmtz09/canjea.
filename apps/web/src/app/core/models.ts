@@ -132,6 +132,20 @@ export interface Deal {
 
 export type DealStatus = 'PROPOSED' | 'ACCEPTED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED' | 'DISPUTED';
 
+export interface DealMessage {
+  id: string;
+  dealId: string;
+  senderId: string;
+  sender: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+  content: string;
+  createdAt: string;
+}
+
 export interface Transaction {
   id: string;
   dealId: string | null;

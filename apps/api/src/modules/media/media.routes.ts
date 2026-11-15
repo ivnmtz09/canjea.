@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { artSvg, avatarSvg, customAvatarSvg } from '../../lib/media.js';
+import { renderCharacterSvg } from '../../lib/character-avatar.js';
 
 export const mediaRouter = Router();
 
@@ -8,6 +9,36 @@ mediaRouter.get('/art/:seed', (req, res) => {
   res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
   res.send(artSvg(seed || 'canjea'));
+});
+
+mediaRouter.get('/avatar/character.svg', (req, res) => {
+  const skin = String(req.query.skin ?? 'medium');
+  const hairStyle = String(req.query.hair ?? 'short');
+  const hairColor = String(req.query.hairColor ?? 'black');
+  const eyeType = String(req.query.eyes ?? 'normal');
+  const eyeColor = String(req.query.eyeColor ?? '#4A3222');
+  const expression = String(req.query.mouth ?? 'smile');
+  const accessory = String(req.query.acc ?? 'none');
+  const clothes = String(req.query.clothes ?? 'tshirt');
+  const clothesColor = String(req.query.clothesColor ?? 'lime');
+  const bgColor = String(req.query.bg ?? 'deep_night');
+
+  res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(
+    renderCharacterSvg({
+      skin,
+      hairStyle,
+      hairColor,
+      eyeType,
+      eyeColor,
+      expression,
+      accessory,
+      clothes,
+      clothesColor,
+      bgColor,
+    }),
+  );
 });
 
 mediaRouter.get('/avatar/custom.svg', (req, res) => {

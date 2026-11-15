@@ -1,12 +1,13 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, of } from 'rxjs';
+import { catchError, filter, interval, of } from 'rxjs';
 import { toApiError } from '../../core/api.service';
 import { AuthService } from '../../core/auth.service';
 import { DealService } from '../../core/data.services';
 import { DEAL_LABELS, formatDate, formatMoney, relativeTime } from '../../core/format';
 import { mediaUrl } from '../../core/media';
-import type { Deal } from '../../core/models';
+import type { Deal, DealMessage } from '../../core/models';
 import { ToastService } from '../../core/toast.service';
 import { AvatarComponent } from '../../shared/avatar.component';
 import { EmptyStateComponent } from '../../shared/empty-state.component';
@@ -122,25 +123,103 @@ type PendingAction = 'accept' | 'reject' | 'complete' | 'cancel' | 'review' | nu
             </div>
           </section>
 
-          <section class="panel">
+          <!-- Deal Chat Panel -->
+          <section class="panel chat-panel">
             <div class="panel__head">
               <div>
-                <p class="mono kicker-mini">Mensaje de la propuesta</p>
-                <h2 class="panel__title">Palabras del trato</h2>
+                <p class="mono kicker-mini">Conversación directa</p>
+                <h2 class="panel__title">Chat de la negociación</h2>
               </div>
-              <span class="mono">{{ ago(item.createdAt) }}</span>
+              <span class="mono">{{ messages().length }} mensajes</span>
             </div>
-            <blockquote class="quote">“{{ item.message }}”</blockquote>
-            <div class="message-author">
-              <app-avatar [user]="item.counterpart" size="sm" />
-              <div>
-                <strong>{{ item.counterpart?.displayName }}</strong>
-                <span class="mono">&#64;{{ item.counterpart?.username }} · {{ item.counterpart?.city }}</span>
+
+            @if (item.message) {
+              <div class="proposal-pin">
+                <span class="mono proposal-pin__tag"><app-icon name="handshake" [size]="11" /> Mensaje de propuesta</span>
+                <p class="proposal-pin__text">“{{ item.message }}”</p>
+                <div class="message-author">
+                  <app-avatar [user]="item.counterpart" size="sm" />
+                  <div>
+                    <strong>{{ item.counterpart?.displayName }}</strong>
+                    <span class="mono">&#64;{{ item.counterpart?.username }} · {{ item.counterpart?.city }}</span>
+                  </div>
+                  @if (item.counterpart?.emailVerified) {
+                    <span class="badge badge--lime"><app-icon name="badge-check" [size]="10" /> verificado</span>
+                  }
+                </div>
               </div>
-              @if (item.counterpart?.emailVerified) {
-                <span class="badge badge--lime"><app-icon name="badge-check" [size]="10" /> verificado</span>
+            }
+
+            <div class="chat-stream" #chatContainer>
+              @if (loadingMessages() && messages().length === 0) {
+                <div class="chat-loading">
+                  <div class="skeleton" style="height: 44px; width: 65%;"></div>
+                  <div class="skeleton" style="height: 44px; width: 55%; margin-left: auto;"></div>
+                </div>
+              } @else if (messages().length === 0) {
+                <div class="chat-empty">
+                  <app-icon name="message" [size]="28" />
+                  <p>Aún no hay mensajes en este chat. Escribe abajo para acordar detalles o puntos de encuentro.</p>
+                </div>
+              } @else {
+                <div class="chat-thread">
+                  @for (msg of messages(); track msg.id) {
+                    <div
+                      class="chat-bubble-wrap"
+                      [class.is-mine]="msg.senderId === auth.user()?.id"
+                      [class.is-other]="msg.senderId !== auth.user()?.id"
+                    >
+                      @if (msg.senderId !== auth.user()?.id) {
+                        <div class="chat-sender-avatar">
+                          <app-avatar [user]="msg.sender ?? item.counterpart" size="xs" />
+                        </div>
+                      }
+                      <div class="chat-bubble">
+                        <div class="chat-bubble__meta">
+                          <span class="chat-sender-name">
+                            {{ msg.senderId === auth.user()?.id ? 'Tú' : (msg.sender?.displayName ?? item.counterpart?.displayName) }}
+                          </span>
+                          <span class="chat-time">{{ ago(msg.createdAt) }}</span>
+                        </div>
+                        <p class="chat-text">{{ msg.content }}</p>
+                      </div>
+                    </div>
+                  }
+                </div>
               }
             </div>
+
+            @if (canChat()) {
+              <form class="chat-composer" (ngSubmit)="sendMessage()" novalidate>
+                <input
+                  class="input chat-input"
+                  type="text"
+                  placeholder="Escribe un mensaje para acordar detalles o entrega..."
+                  [value]="messageText()"
+                  (input)="onMessageInput($event)"
+                  maxlength="1000"
+                  [disabled]="sendingMessage()"
+                  autocomplete="off"
+                />
+                <button
+                  type="submit"
+                  class="btn btn--lime btn--sm chat-send-btn"
+                  [disabled]="!messageText().trim() || sendingMessage()"
+                >
+                  @if (sendingMessage()) {
+                    <span class="spinner"></span>
+                  } @else {
+                    <app-icon name="send" [size]="14" />
+                    <span>Enviar</span>
+                  }
+                </button>
+              </form>
+            } @else {
+              <div class="chat-closed-notice">
+                <app-icon name="lock" [size]="13" />
+                <span>Esta negociación está cerrada y no acepta nuevos mensajes.</span>
+              </div>
+            }
           </section>
 
           <section class="panel">
@@ -503,12 +582,168 @@ type PendingAction = 'accept' | 'reject' | 'complete' | 'cancel' | 'review' | nu
       .deal-item > div {
         min-width: 0;
       }
+      /* ---- Deal chat panel ---- */
+      .chat-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+      }
+      .proposal-pin {
+        padding: 10px 13px;
+        border-radius: var(--radius-sm);
+        background: rgba(201, 255, 61, 0.04);
+        border: 1px solid rgba(201, 255, 61, 0.2);
+        display: grid;
+        gap: 6px;
+      }
+      .proposal-pin__tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.52rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--lime);
+      }
+      .proposal-pin__text {
+        margin: 0;
+        font-size: 0.84rem;
+        font-style: italic;
+        color: var(--paper-dim);
+        line-height: 1.45;
+      }
+      .chat-stream {
+        max-height: 420px;
+        min-height: 160px;
+        overflow-y: auto;
+        padding: 0.5rem 0.2rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+      }
+      .chat-loading {
+        display: grid;
+        gap: 10px;
+        padding: 1rem 0;
+      }
+      .chat-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 2.5rem 1rem;
+        text-align: center;
+        color: var(--muted-2);
+      }
+      .chat-empty p {
+        font-size: 0.82rem;
+        max-width: 38ch;
+        color: var(--muted);
+      }
+      .chat-thread {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .chat-bubble-wrap {
+        display: flex;
+        gap: 8px;
+        max-width: 82%;
+        align-items: flex-end;
+      }
+      .chat-bubble-wrap.is-mine {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+      }
+      .chat-bubble-wrap.is-other {
+        align-self: flex-start;
+      }
+      .chat-sender-avatar {
+        flex-shrink: 0;
+        margin-bottom: 2px;
+      }
+      .chat-bubble {
+        padding: 8px 13px;
+        border-radius: 14px;
+        position: relative;
+        word-break: break-word;
+      }
+      .chat-bubble-wrap.is-mine .chat-bubble {
+        background: rgba(201, 255, 61, 0.12);
+        border: 1px solid rgba(201, 255, 61, 0.35);
+        border-bottom-right-radius: 3px;
+        color: var(--paper);
+      }
+      .chat-bubble-wrap.is-other .chat-bubble {
+        background: var(--ink-3);
+        border: 1px solid var(--line);
+        border-bottom-left-radius: 3px;
+        color: var(--paper-dim);
+      }
+      .chat-bubble__meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 3px;
+      }
+      .chat-sender-name {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--lime);
+      }
+      .chat-bubble-wrap.is-other .chat-sender-name {
+        color: var(--paper);
+      }
+      .chat-time {
+        font-family: var(--font-mono);
+        font-size: 0.52rem;
+        color: var(--muted-2);
+      }
+      .chat-text {
+        margin: 0;
+        font-size: 0.84rem;
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+      .chat-composer {
+        display: flex;
+        gap: 8px;
+        padding-top: 0.6rem;
+        border-top: 1px solid var(--line);
+      }
+      .chat-input {
+        flex: 1;
+        min-height: 42px;
+        font-size: 0.84rem;
+      }
+      .chat-send-btn {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 0 14px;
+        height: 42px;
+      }
+      .chat-closed-notice {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 12px;
+        border-radius: var(--radius-sm);
+        background: var(--ink-3);
+        border: 1px solid var(--line);
+        font-size: 0.74rem;
+        color: var(--muted);
+      }
       .message-author {
         display: flex;
         align-items: center;
         gap: 9px;
-        padding-top: 12px;
-        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        border-top: 1px solid rgba(244, 240, 230, 0.08);
       }
       .message-author > div {
         display: grid;
@@ -718,6 +953,8 @@ type PendingAction = 'accept' | 'reject' | 'complete' | 'cancel' | 'review' | nu
   ],
 })
 export class DealDetailPage implements OnInit {
+  @ViewChild('chatContainer') private chatContainer?: ElementRef<HTMLDivElement>;
+  private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly dealsApi = inject(DealService);
@@ -725,6 +962,10 @@ export class DealDetailPage implements OnInit {
   protected readonly auth = inject(AuthService);
 
   protected readonly deal = signal<Deal | null>(null);
+  protected readonly messages = signal<DealMessage[]>([]);
+  protected readonly loadingMessages = signal(false);
+  protected readonly sendingMessage = signal(false);
+  protected readonly messageText = signal('');
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
   protected readonly acting = signal(false);
@@ -738,6 +979,12 @@ export class DealDetailPage implements OnInit {
   protected readonly DEAL_LABELS = DEAL_LABELS;
 
   private readonly dealId = this.route.snapshot.paramMap.get('id') ?? '';
+
+  protected readonly canChat = computed(() => {
+    const item = this.deal();
+    if (!item) return false;
+    return item.status !== 'CANCELLED' && item.status !== 'REJECTED';
+  });
 
   protected readonly feeCents = computed(() => Math.round((this.deal()?.cashCents ?? 0) * 0.05));
   protected readonly netCents = computed(() => Math.max(0, (this.deal()?.cashCents ?? 0) - this.feeCents()));
@@ -816,6 +1063,60 @@ export class DealDetailPage implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadMessages(true);
+    interval(4000)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        filter(() => !this.sendingMessage() && document.visibilityState === 'visible' && Boolean(this.dealId)),
+      )
+      .subscribe(() => {
+        this.loadMessages(false);
+      });
+  }
+
+  protected loadMessages(initial = false): void {
+    if (!this.dealId) return;
+    if (initial) this.loadingMessages.set(true);
+    this.dealsApi
+      .messages(this.dealId)
+      .pipe(catchError(() => of([])))
+      .subscribe((msgs) => {
+        if (initial) this.loadingMessages.set(false);
+        const currentLen = this.messages().length;
+        this.messages.set(msgs);
+        if (initial || msgs.length > currentLen) {
+          setTimeout(() => this.scrollChatToBottom(), 60);
+        }
+      });
+  }
+
+  protected onMessageInput(event: Event): void {
+    this.messageText.set((event.target as HTMLInputElement).value);
+  }
+
+  protected sendMessage(): void {
+    const text = this.messageText().trim();
+    if (!text || this.sendingMessage() || !this.dealId) return;
+    this.sendingMessage.set(true);
+    this.dealsApi.sendMessage(this.dealId, text).subscribe({
+      next: (msg) => {
+        this.sendingMessage.set(false);
+        this.messageText.set('');
+        this.messages.update((prev) => [...prev, msg]);
+        setTimeout(() => this.scrollChatToBottom(), 60);
+      },
+      error: (err) => {
+        this.sendingMessage.set(false);
+        this.toast.error('No se pudo enviar el mensaje', toApiError(err).message);
+      },
+    });
+  }
+
+  private scrollChatToBottom(): void {
+    if (this.chatContainer?.nativeElement) {
+      const el = this.chatContainer.nativeElement;
+      el.scrollTop = el.scrollHeight;
+    }
   }
 
   protected ago(iso: string | null | undefined): string {

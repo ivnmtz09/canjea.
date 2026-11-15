@@ -35,4 +35,9 @@ export const dealsQuerySchema = z.object({
   status: z.enum(['all', 'PROPOSED', 'ACCEPTED', 'COMPLETED', 'REJECTED', 'CANCELLED']).default('all'),
 });
 
+export const createMessageSchema = z.object({
+  content: z.string().trim().min(1, 'El mensaje no puede estar vacío').max(1000, 'Máximo 1000 caracteres'),
+});
+
 export type CreateDealInput = z.infer<typeof createDealSchema>;
+export type CreateMessageInput = z.infer<typeof createMessageSchema>;

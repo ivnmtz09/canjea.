@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { asyncHandler, validate } from '../../lib/http.js';
 import { authenticate, requirePermission, requireVerified } from '../../middleware/auth.js';
 import { writeLimiter } from '../../middleware/rate-limit.js';
-import { cancelDealSchema, createDealSchema, dealsQuerySchema, respondDealSchema, reviewSchema } from './deals.schemas.js';
+import { cancelDealSchema, createDealSchema, createMessageSchema, dealsQuerySchema, respondDealSchema, reviewSchema } from './deals.schemas.js';
 import * as deals from './deals.service.js';
 
 const idParam = z.object({ id: z.string().min(4).max(40) });
@@ -35,6 +35,23 @@ dealsRouter.get(
   validate({ params: idParam }),
   asyncHandler(async (req, res) => {
     res.json(await deals.getDeal(req.valid.params.id, req.user!));
+  }),
+);
+
+dealsRouter.get(
+  '/:id/messages',
+  validate({ params: idParam }),
+  asyncHandler(async (req, res) => {
+    res.json({ items: await deals.listDealMessages(req.valid.params.id, req.user!) });
+  }),
+);
+
+dealsRouter.post(
+  '/:id/messages',
+  writeLimiter,
+  validate({ params: idParam, body: createMessageSchema }),
+  asyncHandler(async (req, res) => {
+    res.status(201).json(await deals.sendDealMessage(req.valid.params.id, req.valid.body.content, req.user!));
   }),
 );
 

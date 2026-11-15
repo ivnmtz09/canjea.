@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
-import type { AdminStats, AuditLog, AdminUser, Deal, Notification, Paginated, Wallet } from './models';
+import type { AdminStats, AuditLog, AdminUser, Deal, DealMessage, Notification, Paginated, Wallet } from './models';
 
 export interface CreateDealPayload {
   listingId: string;
@@ -44,6 +44,14 @@ export class DealService {
 
   review(id: string, rating: number, comment: string): Observable<Deal> {
     return this.api.post<Deal>(`/deals/${id}/review`, { rating, comment });
+  }
+
+  messages(id: string): Observable<DealMessage[]> {
+    return this.api.get<{ items: DealMessage[] }>(`/deals/${id}/messages`).pipe(map((res) => res.items));
+  }
+
+  sendMessage(id: string, content: string): Observable<DealMessage> {
+    return this.api.post<DealMessage>(`/deals/${id}/messages`, { content });
   }
 }
 

@@ -4,6 +4,13 @@ import { initials } from '../core/format';
 import type { User } from '../core/models';
 import { IconComponent } from './icon.component';
 
+export type AvatarUser = Partial<User> & {
+  displayName?: string | null;
+  username?: string | null;
+  avatarUrl?: string | null;
+  emailVerified?: boolean | string | null;
+};
+
 @Component({
   selector: 'app-avatar',
   imports: [IconComponent],
@@ -84,7 +91,7 @@ import { IconComponent } from './icon.component';
   ],
 })
 export class AvatarComponent {
-  readonly user = input<User | null>(null);
+  readonly user = input<User | AvatarUser | null>(null);
   readonly size = input<'xs' | 'sm' | 'md' | 'lg' | 'xl'>('md');
   readonly ring = input(false);
   readonly showVerified = input(true);

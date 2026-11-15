@@ -162,3 +162,12 @@ CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications (user_id, rea
 CREATE INDEX IF NOT EXISTS idx_codes_user ON verification_codes (user_id, purpose, consumed_at);
 CREATE INDEX IF NOT EXISTS idx_refresh_user ON refresh_tokens (user_id, revoked_at);
 CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS deal_messages (
+  id TEXT PRIMARY KEY,
+  deal_id TEXT NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+  sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_deal_messages_deal ON deal_messages(deal_id, created_at ASC);

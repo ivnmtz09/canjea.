@@ -100,6 +100,15 @@ export async function createDeal(input: CreateDealInput, proposer: AuthUser) {
     timestamp,
   );
 
+  await run(
+    'INSERT INTO deal_messages (id, deal_id, sender_id, content, created_at) VALUES (?, ?, ?, ?, ?)',
+    newId('msg'),
+    id,
+    proposer.id,
+    input.message.trim(),
+    timestamp,
+  );
+
   await notify({
     userId: listing.user_id,
     type: 'DEAL_RECEIVED',
@@ -339,4 +348,101 @@ export async function reviewDeal(id: string, actor: AuthUser, rating: number, co
   });
   await logAudit({ actorId: actor.id, action: 'deal.review', entity: 'deal', entityId: id, meta: { rating, targetId } });
   return getDeal(id, actor);
+}
+
+export interface DealMessageDTO {
+  id: string;
+  dealId: string;
+  senderId: string;
+  sender: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
+  content: string;
+  createdAt: string;
+}
+
+export async function listDealMessages(dealId: string, user: AuthUser): Promise<DealMessageDTO[]> {
+  const deal = await rawDeal(dealId);
+  assertParticipant(deal, user);
+
+  const rows = await all<{
+    id: string;
+    deal_id: string;
+    sender_id: string;
+    content: string;
+    created_at: string;
+    u_id: string;
+    u_username: string;
+    u_display_name: string;
+    u_avatar_url: string | null;
+  }>(
+    `SELECT m.id, m.deal_id, m.sender_id, m.content, m.created_at,
+            u.id AS u_id, u.username AS u_username, u.display_name AS u_display_name, u.avatar_url AS u_avatar_url
+     FROM deal_messages m
+     JOIN users u ON u.id = m.sender_id
+     WHERE m.deal_id = ?
+     ORDER BY m.created_at ASC`,
+    dealId,
+  );
+
+  return rows.map((r) => ({
+    id: r.id,
+    dealId: r.deal_id,
+    senderId: r.sender_id,
+    sender: {
+      id: r.u_id,
+      username: r.u_username,
+      displayName: r.u_display_name,
+      avatarUrl: r.u_avatar_url,
+    },
+    content: r.content,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function sendDealMessage(dealId: string, content: string, user: AuthUser): Promise<DealMessageDTO> {
+  const deal = await rawDeal(dealId);
+  assertParticipant(deal, user);
+
+  if (deal.status === 'REJECTED' || deal.status === 'CANCELLED') {
+    throw AppError.badRequest('No se pueden enviar mensajes en una negociación cerrada.');
+  }
+
+  const id = newId('msg');
+  const now = nowIso();
+
+  await run(
+    'INSERT INTO deal_messages (id, deal_id, sender_id, content, created_at) VALUES (?, ?, ?, ?, ?)',
+    id,
+    dealId,
+    user.id,
+    content,
+    now,
+  );
+
+  const counterpartId = deal.owner_id === user.id ? deal.proposer_id : deal.owner_id;
+  await notify({
+    userId: counterpartId,
+    type: 'DEAL_RECEIVED',
+    title: 'Nuevo mensaje en la negociación',
+    body: `${user.displayName}: ${content.slice(0, 100)}`,
+    link: `/app/negociaciones/${dealId}`,
+  });
+
+  return {
+    id,
+    dealId,
+    senderId: user.id,
+    sender: {
+      id: user.id,
+      username: user.username,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl ?? null,
+    },
+    content,
+    createdAt: now,
+  };
 }

@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, of } from 'rxjs';
@@ -846,6 +847,7 @@ export class ListingDetailPage implements OnInit {
   private readonly dealsApi = inject(DealService);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(NonNullableFormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly auth = inject(AuthService);
 
   protected readonly listing = signal<Listing | null>(null);
@@ -892,7 +894,22 @@ export class ListingDetailPage implements OnInit {
   });
 
   ngOnInit(): void {
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const id = params.get('id') ?? '';
+      if (id) {
+        this.fetchListing(id);
+      }
+    });
+
+    this.dealForm.valueChanges.subscribe(() => this.dealError.set(null));
+  }
+
+  private fetchListing(id: string): void {
+    this.loading.set(true);
+    this.error.set(null);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
     this.listingsApi
       .get(id)
       .pipe(
@@ -911,8 +928,6 @@ export class ListingDetailPage implements OnInit {
         this.loading.set(false);
         if (result.modality !== 'BARTER') this.dealForm.controls.cash.setValue(result.priceCents / 100);
       });
-
-    this.dealForm.valueChanges.subscribe(() => this.dealError.set(null));
   }
 
   protected ago(iso: string): string {
