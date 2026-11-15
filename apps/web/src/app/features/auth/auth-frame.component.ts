@@ -167,6 +167,9 @@ import { LogoComponent } from '../../shared/logo.component';
         white-space: nowrap;
       }
       .auth__form {
+        width: 100%;
+        max-width: 480px;
+        margin-inline: auto;
         animation: rise 0.4s var(--ease-out) both;
       }
       @media (max-width: 900px) {

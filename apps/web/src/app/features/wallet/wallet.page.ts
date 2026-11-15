@@ -231,6 +231,10 @@ type TxFilter = 'all' | 'in' | 'out';
       .preset-row {
         margin-bottom: 0.7rem;
       }
+      .preset-row button {
+        min-height: 44px;
+        padding: 0.5rem 0.85rem;
+      }
       .preset-row button.is-on {
         border-color: var(--lime);
         color: var(--lime);

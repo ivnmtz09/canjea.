@@ -39,7 +39,11 @@
         <div class="hero__trust">
           <div class="hero__avatars" aria-hidden="true">
             @for (listing of heroListings(); track listing.id) {
-              <img [src]="listing.owner?.avatarUrl" [alt]="''" />
+              <img [src]="listing.owner?.avatarUrl || '/api/media/avatar/user.svg'" [alt]="''" />
+            } @empty {
+              <img src="/api/media/avatar/luna.svg?n=LV" [alt]="''" />
+              <img src="/api/media/avatar/kai.svg?n=KR" [alt]="''" />
+              <img src="/api/media/avatar/dani.svg?n=DD" [alt]="''" />
             }
           </div>
           <div class="hero__rating">
@@ -106,16 +110,18 @@
   </section>
 
   <!-- ============================== TAPE ============================== -->
-  <div class="tape" aria-hidden="true">
-    <div class="tape__track">
-      @for (group of [1, 2]; track group) {
-        <div class="tape__group">
-          @for (word of ['TRUEQUE', 'HABILIDADES', 'OBJETOS', 'SERVICIOS', 'DINERO REAL', 'TIEMPO', 'OFERTAS', 'NECESIDADES']; track word) {
-            <span class="tape__word">{{ word }}</span>
-            <span class="tape__dot"></span>
-          }
-        </div>
-      }
+  <div class="tape-wrap" aria-hidden="true">
+    <div class="tape">
+      <div class="tape__track">
+        @for (group of [1, 2]; track group) {
+          <div class="tape__group">
+            @for (word of ['TRUEQUE', 'HABILIDADES', 'OBJETOS', 'SERVICIOS', 'DINERO REAL', 'TIEMPO', 'OFERTAS', 'NECESIDADES']; track word) {
+              <span class="tape__word">{{ word }}</span>
+              <span class="tape__dot"></span>
+            }
+          </div>
+        }
+      </div>
     </div>
   </div>
 

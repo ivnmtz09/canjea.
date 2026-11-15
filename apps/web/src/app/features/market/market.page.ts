@@ -70,12 +70,15 @@ import { SiteHeaderComponent } from '../../shared/site-header.component';
           <form class="search-wrap" (submit)="submitSearch($event)">
             <app-icon name="search" [size]="16" />
             <input
+              id="market-search"
+              name="q"
               class="input input--search"
               type="search"
               placeholder="Buscar bici, guitarra, diseño, monitor…"
               [value]="q()"
               (input)="q.set($any($event.target).value)"
               aria-label="Buscar publicaciones"
+              autocomplete="off"
             />
             <button class="search-go" type="submit" aria-label="Buscar">
               <app-icon name="arrow-right" [size]="15" />
@@ -92,9 +95,9 @@ import { SiteHeaderComponent } from '../../shared/site-header.component';
             </button>
           </div>
 
-          <label class="filter-select">
+          <label class="filter-select" for="filter-modality">
             <span class="mono">Pago</span>
-            <select class="select" [value]="modality()" (change)="setModality($any($event.target).value)">
+            <select id="filter-modality" name="modality" class="select" [value]="modality()" (change)="setModality($any($event.target).value)">
               <option value="">Cualquiera</option>
               <option value="BARTER">Solo trueque</option>
               <option value="CASH">Solo dinero</option>
@@ -102,9 +105,9 @@ import { SiteHeaderComponent } from '../../shared/site-header.component';
             </select>
           </label>
 
-          <label class="filter-select filter-select--sort">
+          <label class="filter-select filter-select--sort" for="filter-sort">
             <span class="mono">Orden</span>
-            <select class="select" [value]="sort()" (change)="setSort($any($event.target).value)">
+            <select id="filter-sort" name="sort" class="select" [value]="sort()" (change)="setSort($any($event.target).value)">
               <option value="recent">Recientes</option>
               <option value="popular">Populares</option>
               <option value="price_asc">Precio: menor</option>
@@ -344,6 +347,8 @@ import { SiteHeaderComponent } from '../../shared/site-header.component';
         overflow-x: auto;
         padding-bottom: 4px;
         scrollbar-width: thin;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
       }
       .cats__count {
         font-size: 0.5rem;

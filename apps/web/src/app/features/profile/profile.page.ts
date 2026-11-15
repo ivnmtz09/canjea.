@@ -334,7 +334,8 @@ function strongPassword(control: AbstractControl): ValidationErrors | null {
         display: flex;
         align-items: center;
         gap: 7px;
-        padding: 0.5rem 0.7rem;
+        min-height: 40px;
+        padding: 0.5rem 0.75rem;
         border: 0;
         border-radius: 8px;
         background: transparent;
@@ -356,6 +357,7 @@ function strongPassword(control: AbstractControl): ValidationErrors | null {
         display: flex;
         align-items: center;
         gap: 7px;
+        min-height: 40px;
       }
       .settings-body {
         display: grid;
@@ -544,10 +546,19 @@ function strongPassword(control: AbstractControl): ValidationErrors | null {
           overflow-x: auto;
           border-bottom: 1px solid var(--line);
           padding-bottom: 0.5rem;
-          gap: 2px;
+          gap: 6px;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior-x: contain;
+          scrollbar-width: none;
         }
+        .settings-nav::-webkit-scrollbar {
+          display: none;
+        }
+        .settings-nav button,
         .settings-nav a {
-          padding: 0.5rem 0.7rem;
+          min-height: 44px;
+          padding: 0.6rem 0.9rem;
+          flex-shrink: 0;
         }
       }
       @media (max-width: 640px) {

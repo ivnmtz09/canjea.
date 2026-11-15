@@ -50,11 +50,13 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  overflow-x: clip;
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
+  overflow-x: clip;
   background-color: var(--ink);
   background-image:
     radial-gradient(900px 600px at 85% -10%, rgba(124, 92, 255, 0.13), transparent 60%),
@@ -892,6 +894,8 @@ hr {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--ink-2);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .table {
   width: 100%;
@@ -1268,7 +1272,9 @@ hr {
   padding: 3rem 1.5rem;
 }
 .auth__form {
-  width: min(420px, 100%);
+  width: min(480px, 100%);
+  max-width: 480px;
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
@@ -2298,6 +2304,8 @@ a.stat-card:hover {
   margin-bottom: 1.5rem;
   overflow-x: auto;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .tabs::-webkit-scrollbar {
   display: none;
@@ -2625,7 +2633,11 @@ a.stat-card:hover {
   flex-wrap: wrap;
 }
 .preset-row button {
-  padding: 0.35rem 0.65rem;
+  padding: 0.4rem 0.75rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 7px;
   border: 1px solid var(--line);
   background: var(--ink);
@@ -2826,6 +2838,13 @@ a.stat-card:hover {
   gap: 0.2rem;
   position: sticky;
   top: 1.5rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.cats,
+.cats__track {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
 }
 .settings-nav a {
   padding: 0.5rem 0.7rem;
@@ -3346,6 +3365,14 @@ a.stat-card:hover {
   .table-wrap {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
+    background:
+      linear-gradient(to right, var(--ink-2) 30%, rgba(18, 16, 22, 0)),
+      linear-gradient(to right, rgba(18, 16, 22, 0), var(--ink-2) 70%) 100% 0,
+      radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.4), transparent),
+      radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.4), transparent) 100% 0;
+    background-repeat: no-repeat;
+    background-size: 40px 100%, 40px 100%, 14px 100%, 14px 100%;
+    background-attachment: local, local, scroll, scroll;
   }
   .profile-head {
     margin-top: -2rem;

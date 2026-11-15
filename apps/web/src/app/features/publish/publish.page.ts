@@ -594,12 +594,13 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
         border: 1px solid var(--line);
         border-radius: var(--radius-sm);
         overflow: hidden;
-        aspect-ratio: 4 / 3;
+        aspect-ratio: 4 / 5;
         background: var(--ink-3);
       }
       .art-preview img {
         width: 100%;
         height: 100%;
+        aspect-ratio: 4 / 5;
         object-fit: cover;
       }
       .art-preview__seed {
@@ -668,12 +669,13 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
       }
       .preview__media {
         position: relative;
-        aspect-ratio: 4 / 3;
+        aspect-ratio: 4 / 5;
         background: var(--ink-3);
       }
       .preview__media img {
         width: 100%;
         height: 100%;
+        aspect-ratio: 4 / 5;
         object-fit: cover;
       }
       .preview__media .badge {

@@ -596,17 +596,20 @@ interface NavItem {
         padding: clamp(1.25rem, 3vw, 2.4rem) clamp(1rem, 3vw, 2.2rem) 5.2rem;
         max-width: 1420px;
         width: 100%;
+        margin-inline: auto;
       }
       @media (min-width: 1600px) {
         .frame__content {
-          max-width: 1720px;
+          max-width: 1600px;
+          margin-inline: auto;
           padding: 2.5rem 3.5rem 6rem;
         }
       }
       @media (min-width: 2200px) {
         .frame__content {
-          max-width: 2160px;
-          padding: 3rem 5rem 6.5rem;
+          max-width: 1600px;
+          margin-inline: auto;
+          padding: 2.5rem 3.5rem 6rem;
         }
       }
       .bottom-nav {
@@ -822,7 +825,7 @@ interface NavItem {
           position: fixed;
           left: 10px;
           right: 10px;
-          bottom: max(10px, env(safe-area-inset-bottom, 10px));
+          bottom: max(12px, env(safe-area-inset-bottom, 12px));
           z-index: 120;
           display: grid;
           grid-template-columns: repeat(5, 1fr);
@@ -841,6 +844,7 @@ interface NavItem {
           justify-items: center;
           gap: 2px;
           padding: 6px 2px;
+          min-height: 44px;
           border-radius: 12px;
           color: var(--muted-2);
           font-family: var(--font-mono);
