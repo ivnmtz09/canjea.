@@ -1,0 +1,422 @@
+<app-site-header />
+
+<main>
+  <!-- ============================== HERO ============================== -->
+  <section class="hero">
+    <div class="hero__aura" aria-hidden="true"></div>
+    <div class="hero__grid container">
+      <div class="hero__copy">
+        <div class="hero__badge">
+          <span class="dot"></span>
+          <span>Mercado abierto · {{ totalListings() }} publicaciones activas</span>
+        </div>
+
+        <h1 class="display hero__title">
+          <span class="hero__row">DAR</span>
+          <span class="hero__row hero__row--indent">PARA <em class="serif">recibir</em></span>
+          <span class="hero__row hero__row--outline">SIN PERDER.</span>
+        </h1>
+
+        <p class="lede hero__lede">
+          Publica lo que ofreces —objetos, habilidades, horas— y lo que necesitas.
+          Cierra un <strong>trueque</strong> o canjea por <strong>dinero real</strong> con fondos en garantía.
+        </p>
+
+        <div class="hero__cta">
+          @if (auth.isAuthenticated()) {
+            <a class="btn btn--lime btn--lg" routerLink="/app">
+              Ir a mi panel <app-icon class="btn__arrow" name="arrow-right" [size]="16" />
+            </a>
+            <a class="btn btn--ghost btn--lg" routerLink="/app/publicar">Publicar algo</a>
+          } @else {
+            <a class="btn btn--lime btn--lg" routerLink="/registro">
+              Entrar al mercado <app-icon class="btn__arrow" name="arrow-right" [size]="16" />
+            </a>
+            <a class="btn btn--ghost btn--lg" routerLink="/entrar">Ya tengo cuenta</a>
+          }
+        </div>
+
+        <div class="hero__trust">
+          <div class="hero__avatars" aria-hidden="true">
+            @for (listing of heroListings(); track listing.id) {
+              <img [src]="listing.owner?.avatarUrl" [alt]="''" />
+            }
+          </div>
+          <div class="hero__rating">
+            <div class="hero__stars" aria-label="Calificación promedio 4.9 de 5">
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+                <app-icon name="star" [size]="12" [strokeWidth]="2" />
+              }
+              <span class="mono">4.9 / 5</span>
+            </div>
+            <span class="hero__trust-text">Personas reales intercambiando, no bots.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero__art" aria-label="Publicaciones destacadas">
+        <div class="hero__ring" aria-hidden="true"></div>
+        <div class="hero__circle" aria-hidden="true"></div>
+
+        <div class="hero__stamp" aria-hidden="true">
+          <app-icon name="repeat" [size]="16" />
+          <span>Trueque o efectivo<br /><b>tú decides</b></span>
+        </div>
+
+        <div class="hero__cards">
+          @for (listing of heroListings(); track listing.id; let i = $index) {
+            <div class="hero__card" [attr.data-slot]="i + 1">
+              <app-listing-card [listing]="listing" />
+            </div>
+          } @empty {
+            @for (slot of [1, 2, 3]; track slot) {
+              <div class="hero__card" [attr.data-slot]="slot">
+                <div class="hero__skeleton">
+                  <div class="skeleton" style="height: 190px"></div>
+                  <div class="skeleton" style="height: 14px; width: 70%"></div>
+                  <div class="skeleton" style="height: 12px; width: 45%"></div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+
+        <p class="hero__vertical mono" aria-hidden="true">HABILIDADES · OBJETOS · SERVICIOS · DINERO</p>
+      </div>
+    </div>
+
+    <div class="hero__metrics container">
+      <div class="hero__metric">
+        <span class="hero__metric-n">{{ totalListings() }}<span class="lime">+</span></span>
+        <span class="mono">publicaciones vivas</span>
+      </div>
+      <div class="hero__metric">
+        <span class="hero__metric-n">1,200<span class="lime">+</span></span>
+        <span class="mono">canjes concretados</span>
+      </div>
+      <div class="hero__metric">
+        <span class="hero__metric-n">5<span class="lime">%</span></span>
+        <span class="mono">comisión solo con dinero</span>
+      </div>
+      <div class="hero__metric">
+        <span class="hero__metric-n">0<span class="lime">$</span></span>
+        <span class="mono">costo por publicar</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== TAPE ============================== -->
+  <div class="tape" aria-hidden="true">
+    <div class="tape__track">
+      @for (group of [1, 2]; track group) {
+        <div class="tape__group">
+          @for (word of ['TRUEQUE', 'HABILIDADES', 'OBJETOS', 'SERVICIOS', 'DINERO REAL', 'TIEMPO', 'OFERTAS', 'NECESIDADES']; track word) {
+            <span class="tape__word">{{ word }}</span>
+            <span class="tape__dot"></span>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ============================== MERCADO ============================== -->
+  <section id="mercado" class="section market">
+    <div class="container">
+      <div class="section-head" appReveal>
+        <div>
+          <p class="eyebrow">En el mercado, ahora</p>
+          <h2 class="h1 market__title">LO QUE HOY<br /><em class="serif lime">está circulando</em></h2>
+        </div>
+        <div class="section-head__aside">
+          <p class="lede">
+            Cada tarjeta es una persona con algo que dar. Explora, guarda lo que te sirva y propón un canje.
+          </p>
+          <a class="btn btn--ghost btn--sm" routerLink="/mercado">
+            Ver todo el mercado <app-icon name="arrow-up-right" [size]="14" />
+          </a>
+        </div>
+      </div>
+
+      <div class="filters" appReveal role="group" aria-label="Filtrar publicaciones">
+        <button class="chip" [class.chip--on]="filter() === 'ALL'" type="button" (click)="filter.set('ALL')">Todo</button>
+        <button class="chip" [class.chip--on]="filter() === 'OFFER'" type="button" (click)="filter.set('OFFER')">
+          <app-icon name="package" [size]="12" /> Se ofrece
+        </button>
+        <button class="chip" [class.chip--on]="filter() === 'NEED'" type="button" (click)="filter.set('NEED')">
+          <app-icon name="search" [size]="12" /> Se necesita
+        </button>
+        <span class="filters__hint mono">{{ filtered().length }} destacadas</span>
+      </div>
+
+      @if (loading()) {
+        <div class="grid grid--3">
+          @for (item of [1, 2, 3, 4, 5, 6]; track item) {
+            <div class="market__skeleton">
+              <div class="skeleton" style="aspect-ratio: 4 / 3"></div>
+              <div class="skeleton" style="height: 16px; width: 80%"></div>
+              <div class="skeleton" style="height: 12px; width: 50%"></div>
+            </div>
+          }
+        </div>
+      } @else if (filtered().length === 0) {
+        <app-empty-state title="Nada por aquí todavía" message="Sé la primera persona en publicar en esta categoría." icon="sparkles">
+          <a class="btn btn--lime btn--sm" routerLink="/app/publicar">Publicar algo</a>
+        </app-empty-state>
+      } @else {
+        <div class="grid grid--3 market__grid">
+          @for (listing of filtered(); track listing.id) {
+            <app-listing-card [listing]="listing" appReveal />
+          }
+        </div>
+      }
+
+      <div class="categories" appReveal>
+        <p class="mono categories__label">Explora por categoría</p>
+        <div class="categories__row">
+          @for (category of categories(); track category.id) {
+            <a class="category" [routerLink]="['/mercado']" [queryParams]="{ category: category.slug }">
+              <span class="category__icon"><app-icon [name]="iconFor(category.slug)" [size]="16" /></span>
+              <span class="category__name">{{ category.name }}</span>
+              <span class="category__count mono">{{ category.listingsCount }}</span>
+            </a>
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== CÓMO FUNCIONA ============================== -->
+  <section id="como-funciona" class="section how">
+    <div class="container">
+      <div class="section-head" appReveal>
+        <div>
+          <p class="eyebrow">Cómo funciona</p>
+          <h2 class="h1">TRES PASOS.<br /><span class="outline-text">CERO RUIDO.</span></h2>
+        </div>
+        <p class="lede section-head__aside">
+          Sin subastas infinitas ni chats que no llevan a nada. Un perfil, una publicación y una propuesta clara.
+        </p>
+      </div>
+
+      <div class="steps">
+        @for (step of steps; track step.n; let i = $index) {
+          <article class="step" appReveal [delay]="i * 90">
+            <div class="step__top">
+              <span class="step__n">{{ step.n }}</span>
+              <span class="step__icon"><app-icon [name]="step.icon" [size]="22" /></span>
+            </div>
+            <h3 class="step__title">{{ step.title }}</h3>
+            <p class="step__text">{{ step.text }}</p>
+            <div class="step__foot">
+              <span class="badge badge--lime">{{ step.tag }}</span>
+              <app-icon name="arrow-up-right" [size]="18" />
+            </div>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== DOS CAMINOS ============================== -->
+  <section class="section paths">
+    <div class="container">
+      <div class="section-head section-head--center" appReveal>
+        <div>
+          <p class="eyebrow">Dos formas de cerrar</p>
+          <h2 class="h1">TU COSA VALE.<br /><em class="serif lime">elige cómo cobrarla.</em></h2>
+        </div>
+      </div>
+
+      <div class="paths__grid">
+        <article class="path path--barter" appReveal>
+          <div class="path__head">
+            <span class="path__index">A</span>
+            <span class="path__icon"><app-icon name="repeat" [size]="26" /></span>
+          </div>
+          <h3 class="path__title">Trueque<br />directo</h3>
+          <p class="path__text">
+            Cambia un objeto por otro, una habilidad por un servicio. Sin dinero de por medio, sin comisiones.
+          </p>
+          <ul class="path__list">
+            <li><app-icon name="circle-check" [size]="15" /> Publica lo que ofreces y lo que buscas</li>
+            <li><app-icon name="circle-check" [size]="15" /> Recibe propuestas con mensaje y publicación</li>
+            <li><app-icon name="circle-check" [size]="15" /> Cierra y califiquen mutuamente</li>
+          </ul>
+          <div class="path__foot">
+            <span class="mono">Comisión 0%</span>
+            <a routerLink="/registro" class="path__link">Empezar <app-icon name="arrow-right" [size]="15" /></a>
+          </div>
+        </article>
+
+        <article class="path path--cash" appReveal [delay]="90">
+          <div class="path__head">
+            <span class="path__index">B</span>
+            <span class="path__icon"><app-icon name="wallet" [size]="26" /></span>
+          </div>
+          <h3 class="path__title">Canje<br />con dinero</h3>
+          <p class="path__text">
+            ¿Lo que quieres no encaja en un trueque? Ofrece efectivo. El monto queda retenido hasta que ambas partes cierren.
+          </p>
+          <ul class="path__list">
+            <li><app-icon name="circle-check" [size]="15" /> Fondos en garantía (escrow) al aceptar</li>
+            <li><app-icon name="circle-check" [size]="15" /> Liberación al completar el canje</li>
+            <li><app-icon name="circle-check" [size]="15" /> Comisión clara: 5% solo si hay dinero</li>
+          </ul>
+          <div class="path__foot">
+            <span class="mono">Pagos simulados en demo</span>
+            <a routerLink="/registro" class="path__link">Probar <app-icon name="arrow-right" [size]="15" /></a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== RBAC ============================== -->
+  <section id="roles" class="section roles">
+    <div class="container roles__grid">
+      <div appReveal>
+        <p class="eyebrow">Reglas claras</p>
+        <h2 class="h1 roles__title">TRES ROLES.<br /><span class="outline-text">PERMISOS</span><br />EXPLÍCITOS.</h2>
+        <p class="lede">
+          CANJEA no improvisa con la moderación. Cada acción está atada a un permiso y cada permiso a un rol.
+          Lo que no puedes hacer, no aparece.
+        </p>
+
+        <div class="roles__cards">
+          <div class="role-card">
+            <span class="badge badge--lime">USER</span>
+            <p>Publica, negocia, paga y califica. Sujeto a verificación de correo.</p>
+          </div>
+          <div class="role-card">
+            <span class="badge badge--violet">MODERATOR</span>
+            <p>Revisa publicaciones, resuelve reportes y suspende cuentas USER.</p>
+          </div>
+          <div class="role-card">
+            <span class="badge badge--pink">ADMIN</span>
+            <p>Gestiona roles, ve auditoría y opera la plataforma completa.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="roles__panel" appReveal [delay]="100">
+        <div class="terminal">
+          <div class="terminal__bar">
+            <span class="terminal__dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="mono">rbac.matrix</span>
+            <app-icon name="shield-check" [size]="14" />
+          </div>
+          <div class="matrix">
+            <div class="matrix__head mono">
+              <span>Permiso</span><span>USER</span><span>MOD</span><span>ADMIN</span>
+            </div>
+            @for (row of [
+              { label: 'Publicar y editar', user: true, mod: true, admin: true },
+              { label: 'Negociar y pagar', user: true, mod: true, admin: true },
+              { label: 'Moderar contenido', user: false, mod: true, admin: true },
+              { label: 'Suspender cuentas', user: false, mod: true, admin: true },
+              { label: 'Cambiar roles', user: false, mod: false, admin: true },
+              { label: 'Ver auditoría', user: false, mod: true, admin: true }
+            ]; track row.label) {
+              <div class="matrix__row">
+                <span>{{ row.label }}</span>
+                <span class="matrix__cell" [class.is-on]="row.user"><app-icon [name]="row.user ? 'check' : 'circle-minus'" [size]="14" /></span>
+                <span class="matrix__cell" [class.is-on]="row.mod"><app-icon [name]="row.mod ? 'check' : 'circle-minus'" [size]="14" /></span>
+                <span class="matrix__cell is-admin" [class.is-on]="row.admin"><app-icon [name]="row.admin ? 'check' : 'circle-minus'" [size]="14" /></span>
+              </div>
+            }
+          </div>
+          <div class="terminal__foot mono">
+            <app-icon name="lock" [size]="12" /> Cada request valida rol + permiso + propiedad
+          </div>
+        </div>
+
+        <div class="roles__features">
+          <div class="mini">
+            <app-icon name="shield-check" [size]="18" />
+            <div><strong>Escrow</strong><span>Dinero retenido hasta cerrar.</span></div>
+          </div>
+          <div class="mini">
+            <app-icon name="scan-face" [size]="18" />
+            <div><strong>Verificación</strong><span>Correo y contraseña fuerte.</span></div>
+          </div>
+          <div class="mini">
+            <app-icon name="file" [size]="18" />
+            <div><strong>Auditoría</strong><span>Cada acción sensible queda registrada.</span></div>
+          </div>
+          <div class="mini">
+            <app-icon name="ban" [size]="18" />
+            <div><strong>Límites</strong><span>Rate limiting y validación por tipo.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== CONFIANZA ============================== -->
+  <section id="confianza" class="section trust">
+    <div class="container">
+      <div class="trust__quote" appReveal>
+        <span class="trust__mark" aria-hidden="true"><app-icon name="quote" [size]="34" /></span>
+        <p class="trust__text">
+          La confianza no se pide.<br />
+          <em class="serif lime">se diseña.</em>
+        </p>
+        <div class="trust__by">
+          <span class="mono">Manifiesto CANJEA · 01</span>
+          <span class="trust__line"></span>
+        </div>
+      </div>
+
+      <div class="trust__grid">
+        <article class="trust__item" appReveal>
+          <app-icon name="lock" [size]="20" />
+          <h3>El dinero no se mueve solo</h3>
+          <p>Al aceptar una oferta con efectivo, el monto queda en garantía. Se libera cuando el canje se completa.</p>
+        </article>
+        <article class="trust__item" appReveal [delay]="70">
+          <app-icon name="badge-check" [size]="20" />
+          <h3>Publicar requiere identidad</h3>
+          <p>Correo verificado y contraseña robusta antes de publicar, negociar o retirar. Los roles se aplican en el servidor.</p>
+        </article>
+        <article class="trust__item" appReveal [delay]="140">
+          <app-icon name="scale" [size]="20" />
+          <h3>Reglas iguales para todos</h3>
+          <p>Moderación puede revisar, pero no cambiar roles. Administración puede todo, y todo queda en auditoría.</p>
+        </article>
+        <article class="trust__item" appReveal [delay]="210">
+          <app-icon name="zap" [size]="20" />
+          <h3>Hecho para moverse</h3>
+          <p>PWA instalable, interfaz rápida y diseño pensado para el celular. Sin apps que ocupan medio teléfono.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== CTA ============================== -->
+  <section class="section cta">
+    <div class="cta__glow" aria-hidden="true"></div>
+    <div class="container cta__inner" appReveal>
+      <div class="cta__sticker sticker" aria-hidden="true">
+        <app-icon name="sparkles" [size]="14" /> sin costo de entrada
+      </div>
+      <h2 class="display cta__title">
+        TIENES ALGO<br />
+        QUE ALGUIEN<br />
+        <em class="serif">necesita.</em>
+      </h2>
+      <p class="lede cta__lede">
+        Publicarlo toma menos de dos minutos. Encontrar con quién cambiarlo, depende de ti.
+      </p>
+      <div class="cta__actions">
+        <a class="btn btn--lime btn--lg" [routerLink]="auth.isAuthenticated() ? '/app/publicar' : '/registro'">
+          {{ auth.isAuthenticated() ? 'Publicar algo' : 'Crear mi cuenta' }}
+          <app-icon class="btn__arrow" name="arrow-right" [size]="16" />
+        </a>
+        <a class="btn btn--ghost btn--lg" routerLink="/entrar">Explorar primero</a>
+      </div>
+      <div class="cta__marquee" aria-hidden="true">CANJEA · CANJEA · CANJEA · CANJEA</div>
+    </div>
+  </section>
+</main>
+
+<app-site-footer />

@@ -1,0 +1,72 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: canjea_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: canjea
+      POSTGRES_USER: canjea
+      POSTGRES_PASSWORD: canjea_dev
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - canjea_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U canjea -d canjea"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - canjea_net
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: canjea_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4100
+      DATABASE_URL: postgres://canjea:canjea_dev@db:5432/canjea
+      DATABASE_SSL: "false"
+      WEB_ORIGIN: http://localhost:4200,http://localhost:80,http://localhost,http://127.0.0.1:4200
+      PUBLIC_URL: http://localhost:4100
+      ADMIN_EMAIL: ivanjmm01@gmail.com
+      ADMIN_PASSWORD: 322-520iM.
+      JWT_ACCESS_SECRET: dev_access_secret_change_me_please_32_chars
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_me_please_32_chars
+      CURRENCY: USD
+      PLATFORM_FEE_BPS: 500
+      MIN_WITHDRAW_CENTS: 500
+    ports:
+      - "4100:4100"
+    networks:
+      - canjea_net
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: canjea_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "4200:80"
+    networks:
+      - canjea_net
+
+volumes:
+  canjea_pgdata:
+    name: canjea_pgdata
+
+networks:
+  canjea_net:
+    name: canjea_net
+    driver: bridge

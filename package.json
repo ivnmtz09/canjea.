@@ -1,0 +1,15 @@
+{
+  "name": "canjea",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CANJEA — mercado abierto de intercambio: trueque y canje por dinero real con garantía.",
+  "scripts": {
+    "install:all": "npm --prefix apps/api install && npm --prefix apps/web install",
+    "dev:api": "npm --prefix apps/api run dev",
+    "dev:web": "npm --prefix apps/web run start -- --port 4200",
+    "build": "npm --prefix apps/api run build && npm --prefix apps/web run build",
+    "typecheck": "npm --prefix apps/api run typecheck",
+    "db:reset": "npm --prefix apps/api run db:reset",
+    "seed": "npm --prefix apps/api run seed"
+  }
+}

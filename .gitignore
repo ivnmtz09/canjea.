@@ -1,0 +1,25 @@
+# dependencias
+node_modules/
+apps/*/node_modules/
+
+# builds
+dist/
+apps/*/dist/
+.angular/
+
+# entorno y base de datos local
+.env
+apps/api/.env
+apps/api/data/*.db
+apps/api/data/*.db-wal
+apps/api/data/*.db-shm
+
+# logs y temporales
+*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# playwright
+.playwright-cli/
+test-results/
