@@ -163,3 +163,41 @@ export function avatarSvg(rawSeed: string, initials: string): string {
   <text x="160" y="190" text-anchor="middle" font-family="'Space Grotesk', Inter, system-ui, sans-serif" font-size="104" font-weight="700" letter-spacing="-4" fill="${palette.text}" transform="rotate(${rotation} 160 160)">${safeInitials}</text>
 </svg>`;
 }
+
+/**
+ * Genera un avatar SVG 100% personalizado con colores y forma elegidos por el usuario.
+ * Usado por el endpoint GET /api/media/avatar/custom.svg?bg=...&accent=...&shape=...&n=...
+ */
+export function customAvatarSvg(bg: string, accent: string, shape: string, letters: string): string {
+  const safeLetters = letters.replace(/[^A-Za-z\u00C0-\u024F]/g, '').slice(0, 2).toUpperCase() || 'C';
+  const fontSize = safeLetters.length === 1 ? 128 : 96;
+  const textY = Math.round(160 + fontSize * 0.38);
+
+  let deco = '';
+  if (shape === 'circle') {
+    deco = `<circle cx="160" cy="160" r="130" fill="${accent}" opacity="0.14"/>
+  <circle cx="160" cy="160" r="130" fill="none" stroke="${accent}" stroke-width="2" opacity="0.5"/>
+  <circle cx="90" cy="85" r="52" fill="${accent}" opacity="0.09"/>`;
+  } else if (shape === 'diamond') {
+    deco = `<polygon points="160,30 290,160 160,290 30,160" fill="${accent}" opacity="0.11"/>
+  <polygon points="160,30 290,160 160,290 30,160" fill="none" stroke="${accent}" stroke-width="2" opacity="0.4"/>`;
+  } else if (shape === 'triangle') {
+    deco = `<polygon points="160,20 300,290 20,290" fill="${accent}" opacity="0.11"/>
+  <polygon points="160,20 300,290 20,290" fill="none" stroke="${accent}" stroke-width="2" opacity="0.4"/>`;
+  } else if (shape === 'hexagon') {
+    deco = `<polygon points="160,20 285,90 285,230 160,300 35,230 35,90" fill="${accent}" opacity="0.11"/>
+  <polygon points="160,20 285,90 285,230 160,300 35,230 35,90" fill="none" stroke="${accent}" stroke-width="2" opacity="0.45"/>`;
+  } else if (shape === 'star') {
+    deco = `<polygon points="160,25 190,120 290,125 215,185 240,280 160,225 80,280 105,185 30,125 130,120" fill="${accent}" opacity="0.12"/>
+  <polygon points="160,25 190,120 290,125 215,185 240,280 160,225 80,280 105,185 30,125 130,120" fill="none" stroke="${accent}" stroke-width="2" opacity="0.4"/>`;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" role="img" aria-label="Avatar personalizado de ${safeLetters}">
+  <rect width="320" height="320" fill="${bg}"/>
+  ${deco}
+  <text x="160" y="${textY}" text-anchor="middle"
+    font-family="'Space Grotesk', Inter, system-ui, sans-serif"
+    font-size="${fontSize}" font-weight="700" letter-spacing="-3"
+    fill="${accent}">${safeLetters}</text>
+</svg>`;
+}

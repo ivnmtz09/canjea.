@@ -2,6 +2,7 @@ import { closeDatabase, count, get, run, tx } from '../lib/db.js';
 import { hashPassword } from '../lib/password.js';
 import { newId, nowIso } from '../lib/ids.js';
 import { env } from '../config/env.js';
+import { seedDemo } from './demo.js';
 
 const CATEGORIES = [
   { slug: 'tecnologia', name: 'Tecnología', icon: 'cpu', blurb: 'Hardware, gadgets y equipo de trabajo.' },
@@ -96,9 +97,15 @@ export async function maybeSeed(): Promise<void> {
     count('SELECT COUNT(*) AS n FROM users'),
     count('SELECT COUNT(*) AS n FROM categories'),
   ]);
-  if (users > 0 && categories >= CATEGORIES.length) return;
-  console.info('  · Base incompleta, sembrando catálogo y administrador…');
-  await seed();
+  if (users === 0 || categories < CATEGORIES.length) {
+    console.info('  · Base incompleta, sembrando catálogo y administrador…');
+    await seed();
+  }
+  const listingsCount = await count('SELECT COUNT(*) AS n FROM listings');
+  if (listingsCount === 0) {
+    console.info('  · Sembrando datos de demo...');
+    await seedDemo();
+  }
 }
 
 if (process.argv[1]?.includes('seed')) {

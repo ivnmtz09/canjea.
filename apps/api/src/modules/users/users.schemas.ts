@@ -34,8 +34,15 @@ export const updateProfileSchema = z
     avatarUrl: z
       .string()
       .trim()
-      .max(500)
-      .refine((value) => value === '' || value.startsWith('/api/media/') || /^https?:\/\//.test(value), 'URL inválida')
+      .max(600)
+      .refine(
+        (value) =>
+          value === '' ||
+          value.startsWith('/api/media/') ||
+          /^https?:\/\//.test(value) ||
+          value.startsWith('data:image/svg+xml'),
+        'URL inválida',
+      )
       .optional(),
   })
   .strict();

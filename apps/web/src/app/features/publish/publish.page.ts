@@ -233,30 +233,89 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
           <div class="panel__head">
             <div>
               <p class="mono panel__kicker">03 · Imagen</p>
-              <h2 class="panel__title">Arte generativo CANJEA</h2>
+              <h2 class="panel__title">Fotografía o imagen</h2>
             </div>
-            <button class="btn btn--soft btn--sm" type="button" (click)="shuffleArt()">
-              <app-icon name="refresh" [size]="14" /> Generar otro
-            </button>
+            <div class="image-mode-tabs" role="tablist">
+              <button
+                class="btn btn--xs"
+                type="button"
+                [class.btn--primary]="imageMode() === 'real'"
+                [class.btn--soft]="imageMode() !== 'real'"
+                (click)="imageMode.set('real')"
+              >
+                <app-icon name="camera" [size]="13" /> Foto real
+              </button>
+              <button
+                class="btn btn--xs"
+                type="button"
+                [class.btn--primary]="imageMode() === 'art'"
+                [class.btn--soft]="imageMode() !== 'art'"
+                (click)="imageMode.set('art')"
+              >
+                <app-icon name="sparkles" [size]="13" /> Arte CANJEA
+              </button>
+            </div>
           </div>
-          <p class="hint art-hint">
-            No necesitas subir fotos para la demo. Generamos un póster único a partir del título; puedes cambiarlo
-            cuantas veces quieras.
-          </p>
-          <div class="art-grid">
-            <div class="art-preview">
-              <img [src]="artUrl()" alt="Vista previa del arte generado" />
-              <span class="art-preview__seed mono">{{ artSeed() }}</span>
-            </div>
-            <div class="art-side">
-              <div class="art-rules">
-                <p><app-icon name="image" [size]="14" /> Composición generada en el servidor.</p>
-                <p><app-icon name="zap" [size]="14" /> Carga rápida y sin dependencias externas.</p>
-                <p><app-icon name="sparkles" [size]="14" /> Paleta CANJEA: lima, violeta y rosa.</p>
+
+          @if (imageMode() === 'real') {
+            <p class="hint art-hint">
+              Elige una fotografía de alta calidad sugerida según la categoría o pega una URL directa de tu imagen.
+            </p>
+            <div class="art-grid">
+              <div class="art-preview">
+                <img [src]="effectiveImageUrl()" alt="Vista previa de la fotografía" />
               </div>
-              <a class="btn btn--ghost btn--sm" routerLink="/app/mis-cosas">Ver mis publicaciones</a>
+              <div class="art-side">
+                @if (currentCategoryPresets().length > 0) {
+                  <span class="mono studio-label">Fotos recomendadas</span>
+                  <div class="preset-thumbs">
+                    @for (preset of currentCategoryPresets(); track preset.url) {
+                      <button
+                        type="button"
+                        class="preset-thumb"
+                        [class.is-on]="selectedPhotoUrl() === preset.url"
+                        (click)="selectPhoto(preset.url)"
+                        [title]="preset.label"
+                      >
+                        <img [src]="preset.url" [alt]="preset.label" />
+                        <span class="preset-thumb__label">{{ preset.label }}</span>
+                      </button>
+                    }
+                  </div>
+                }
+                <label class="field" style="margin-top: 8px;">
+                  <span class="label">O pega una URL de imagen</span>
+                  <input
+                    class="input input--sm"
+                    type="url"
+                    placeholder="https://images.unsplash.com/..."
+                    [value]="customImageUrl()"
+                    (input)="onCustomImageInput($event)"
+                  />
+                </label>
+              </div>
             </div>
-          </div>
+          } @else {
+            <p class="hint art-hint">
+              Generamos un póster único a partir del título; puedes cambiarlo cuantas veces quieras.
+            </p>
+            <div class="art-grid">
+              <div class="art-preview">
+                <img [src]="artUrl()" alt="Vista previa del arte generado" />
+                <span class="art-preview__seed mono">{{ artSeed() }}</span>
+              </div>
+              <div class="art-side">
+                <button class="btn btn--soft btn--sm" type="button" (click)="shuffleArt()">
+                  <app-icon name="refresh" [size]="14" /> Generar otra composición
+                </button>
+                <div class="art-rules" style="margin-top: 10px;">
+                  <p><app-icon name="image" [size]="14" /> Composición generada en el servidor.</p>
+                  <p><app-icon name="zap" [size]="14" /> Carga rápida y sin dependencias externas.</p>
+                  <p><app-icon name="sparkles" [size]="14" /> Paleta CANJEA: lima, violeta y rosa.</p>
+                </div>
+              </div>
+            </div>
+          }
         </section>
 
         @if (error()) {
@@ -287,7 +346,7 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
 
           <div class="preview__card">
             <div class="preview__media">
-              <img [src]="artUrl()" alt="" />
+              <img [src]="effectiveImageUrl()" alt="" />
               <span class="badge" [class.badge--pink]="form.controls.kind.value === 'NEED'" [class.badge--lime]="form.controls.kind.value === 'OFFER'">
                 {{ form.controls.kind.value === 'OFFER' ? 'Se ofrece' : 'Se necesita' }}
               </span>
@@ -583,6 +642,53 @@ import { StatusBadgeComponent } from '../../shared/status-badge.component';
       .art-hint {
         margin-bottom: 10px;
       }
+      .image-mode-tabs {
+        display: flex;
+        gap: 6px;
+      }
+      .preset-thumbs {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+        margin-top: 4px;
+      }
+      .preset-thumb {
+        position: relative;
+        aspect-ratio: 16 / 10;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 2px solid var(--line);
+        background: var(--ink-3);
+        padding: 0;
+        cursor: pointer;
+        transition: border-color 0.15s ease, transform 0.15s ease;
+      }
+      .preset-thumb:hover {
+        border-color: var(--line-strong);
+        transform: translateY(-2px);
+      }
+      .preset-thumb.is-on {
+        border-color: var(--lime);
+        box-shadow: 0 0 0 2px rgba(201, 255, 61, 0.25);
+      }
+      .preset-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .preset-thumb__label {
+        position: absolute;
+        inset-inline: 0;
+        bottom: 0;
+        padding: 2px 4px;
+        font-size: 0.52rem;
+        background: rgba(11, 10, 16, 0.75);
+        color: var(--paper);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+      }
       .art-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -802,6 +908,62 @@ export class PublishPage implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly artVersion = signal(0);
   protected readonly revision = signal(0);
+  protected readonly imageMode = signal<'real' | 'art'>('real');
+  protected readonly selectedPhotoUrl = signal<string>('');
+  protected readonly customImageUrl = signal<string>('');
+
+  protected readonly categoryPhotoPresets: Record<string, { label: string; url: string }[]> = {
+    tecnologia: [
+      { label: 'MacBook & Setup', url: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=800&q=80' },
+      { label: 'iPhone', url: 'https://images.unsplash.com/photo-1678685888221-cda773a3dcdb?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Teclado mecánico', url: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Monitor 4K', url: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&w=800&q=80' },
+    ],
+    bicicletas: [
+      { label: 'Mountain Bike', url: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Bicicleta de ruta', url: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Urbana clásica', url: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80' },
+    ],
+    musica: [
+      { label: 'Guitarra eléctrica', url: 'https://images.unsplash.com/photo-1510915361894-db8b60106cb1?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Sintetizador', url: 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Guitarra acústica', url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Piano', url: 'https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?auto=format&fit=crop&w=800&q=80' },
+    ],
+    diseno: [
+      { label: 'Identidad y branding', url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&w=800&q=80' },
+      { label: 'iPad & Ilustración', url: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Cámara mirrorless', url: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80' },
+    ],
+    hogar: [
+      { label: 'Silla ergonómica', url: 'https://images.unsplash.com/photo-1580481077195-c322b270830d?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Plantas y botánica', url: 'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Mesa de madera', url: 'https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?auto=format&fit=crop&w=800&q=80' },
+    ],
+    servicios: [
+      { label: 'Reparación electrónica', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Yoga y bienestar', url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Fotografía estudio', url: 'https://images.unsplash.com/photo-1452587925148-ce544e77e70d?auto=format&fit=crop&w=800&q=80' },
+    ],
+    gaming: [
+      { label: 'Consola PlayStation', url: 'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Nintendo Switch', url: 'https://images.unsplash.com/photo-1612287233215-d91361b2fc8d?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Setup gamer', url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=800&q=80' },
+    ],
+    moda: [
+      { label: 'Chaqueta de cuero', url: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Zapatillas deportivas', url: 'https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Mochila urbana', url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=80' },
+    ],
+    libros: [
+      { label: 'Colección de libros', url: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Libros de diseño', url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80' },
+    ],
+    comida: [
+      { label: 'Café de especialidad', url: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80' },
+      { label: 'Panadería artesanal', url: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80' },
+    ],
+  };
 
   protected readonly modalities = [
     { value: 'BARTER' as const, title: 'Solo trueque', text: 'Cambio por otro objeto o servicio.', icon: 'repeat' as const },
@@ -829,6 +991,26 @@ export class PublishPage implements OnInit {
   });
 
   protected readonly artUrl = computed(() => `/api/media/art/${encodeURIComponent(this.artSeed())}.svg`);
+
+  protected readonly currentCategoryPresets = computed(() => {
+    this.revision();
+    const catId = this.form.controls.categoryId.value;
+    const cat = this.categories().find((c) => c.id === catId);
+    const slugKey = cat?.slug ?? '';
+    return this.categoryPhotoPresets[slugKey] ?? this.categoryPhotoPresets['tecnologia'] ?? [];
+  });
+
+  protected readonly effectiveImageUrl = computed(() => {
+    if (this.imageMode() === 'art') {
+      return this.artUrl();
+    }
+    const custom = this.customImageUrl().trim();
+    if (custom) return custom;
+    const selected = this.selectedPhotoUrl();
+    if (selected) return selected;
+    const presets = this.currentCategoryPresets();
+    return presets[0]?.url ?? this.artUrl();
+  });
   protected readonly categoryName = computed(() => {
     this.revision();
     return (
@@ -901,6 +1083,16 @@ export class PublishPage implements OnInit {
     this.tags.update((tags) => tags.filter((item) => item !== tag));
   }
 
+  protected selectPhoto(url: string): void {
+    this.selectedPhotoUrl.set(url);
+    this.customImageUrl.set('');
+  }
+
+  protected onCustomImageInput(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.customImageUrl.set(val);
+  }
+
   protected submit(): void {
     this.error.set(null);
     this.form.markAllAsTouched();
@@ -926,7 +1118,7 @@ export class PublishPage implements OnInit {
         currency: 'USD',
         location: value.location.trim(),
         tags: this.tags(),
-        imageUrl: this.artUrl(),
+        imageUrl: this.effectiveImageUrl(),
       })
       .subscribe({
         next: (listing) => {
